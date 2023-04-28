@@ -35,7 +35,8 @@ def save_to_log(mess_time, user_name, chat_id, message):
 def err_log(err_text):
     try:
         with open('log\\errors.log', 'a', encoding='utf-8') as f:
-            f.write('\n' + err_text)
+            f.write('\n' + str(int(time.time())) + " " + err_text)
+        print(str(int(time.time())), err_text)
         return True
     except:
         return False
@@ -49,11 +50,11 @@ def send_message(bt, chat_id, message):
         return True
     except Exception as be:
         # вернуть False и зарегистрировать ошибку, если она возникла
-        print("Возникла ошибка бота \n" + str(be))
+        err_log("Возникла ошибка бота \n" + str(be))
         return False
     finally:
         if not save_to_log(last_message_time, "Afina", chat_id, message):
-            err_log(str(int(time.time())))
+            err_log("Ошибка сохранения лога для чата " + str(chat_id))
 
 
 def create_dialog(userdata, mess):
@@ -65,12 +66,12 @@ def create_dialog(userdata, mess):
                 need_hello = False
             if int(data["time"]) < int(time.time()) - max_message_live:
                 userdata.remove(data)
-                print("Очистка устаревших сообщений", data["content"])
+                err_log("Очистка устаревших сообщений " + data["content"])
             else:
                 curdialog.append({"role": data["role"], "content": data["content"]})
     # если текущий чат пуст, познакомить пользователя
     if need_hello:
-        print("Новая беседа с", str(mess.from_user.id), mess.from_user.first_name)
+        err_log("Новая беседа с " + str(mess.from_user.id) + " " + mess.from_user.first_name)
         userdata.insert(0, {"ID": mess.chat.id, "time": last_message_time,
                             "role": "assistant", "content": "Здравствуйте, " + mess.from_user.first_name})
         userdata.insert(0, {"ID": mess.chat.id, "time": last_message_time,
@@ -94,7 +95,6 @@ def send_chatlist(message):
 @bot.message_handler(commands=['send'])
 def send_tochat(message):
     command, chat_id, text = message.text.split('\\')
-    print("-", chat_id, text)
     while not send_message(bot, chat_id, text):
         print("Ждем -", sleep_time, "сек")
         time.sleep(sleep_time)
@@ -118,7 +118,6 @@ def set_chat_state(chat_id, state):
             bot_chat_states.remove(chat)
             break
     bot_chat_states.append({"ID": chat_id, "state": state, "Name": name})
-    print(bot_chat_states)
 
 
 @bot.message_handler(commands=['state'])
@@ -182,7 +181,7 @@ def handle_message(message):
             # делаем попытки запросов пока ответ не влезет в рамки максимального значение токенов
             while not get_response:
                 cur_dialog = create_dialog(user_data, message)
-                print(cur_dialog)
+                # print(cur_dialog)
                 try:
                     response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=cur_dialog)
                     print(list_of_names[0] + " : " + response.choices[0].message.content)
@@ -200,7 +199,7 @@ def handle_message(message):
                         del_mes = 0
                         for data in user_data:
                             if data["ID"] == message.chat.id:
-                                print("Очистка старых сообщений, буфер переполнен ", data["content"])
+                                err_log("Очистка старых сообщений, буфер переполнен " + data["content"])
                                 user_data.remove(data)
                                 del_mes += 1
                                 if del_mes == 4:
@@ -216,5 +215,5 @@ def handle_message(message):
 
 
 if __name__ == '__main__':
-    print("Афина на связи!")
+    err_log("Афина на связи!")
     bot.polling()
