@@ -48,7 +48,7 @@ def save_to_log(mess_time, user_name, chat_id, message):
 
 def err_log(err_text):
     try:
-        with open(os.path.join(os.getcwd(), 'msg', 'errors.log', 'a', encoding='utf-8') as f:
+        with open(os.path.join(os.getcwd(), 'log', 'errors.log'), 'a', encoding='utf-8') as f:
             f.write('\n' + str(int(time.time())) + " " + err_text)
         print(str(int(time.time())), err_text)
         return True
