@@ -31,7 +31,8 @@ def random_phrase(file):
         with open(os.path.join('data', file), 'r', encoding='utf-8') as file:
             lines = file.readlines()
             return random.choice(lines).strip()
-    except:
+    except Exception as be:
+        err_log(str(be))
         return 'Хм...'
 
 
@@ -40,13 +41,14 @@ def save_to_log(mess_time, user_name, chat_id, message):
         with open(os.path.join('msg', 'chat' + str(chat_id) + '.txt'), 'a', encoding='utf-8') as f:
             f.write('\n' + str(mess_time) + " " + user_name + " : " + message)
         return True
-    except:
+    except Exception as be:
+        err_log(str(be))
         return False
 
 
 def err_log(err_text):
     try:
-        with open(os.path.join('log', 'errors.log'), 'a', encoding='utf-8') as f:
+        with open('errors.log', 'a', encoding='utf-8') as f:
             f.write('\n' + str(int(time.time())) + " " + err_text)
         print(str(int(time.time())), err_text)
         return True
