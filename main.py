@@ -24,8 +24,6 @@ max_dialog_tokens = 4097
 bot_chat_states = []
 # запомнить время старта
 start_time = int(time.time())
-# определение текущей директории
-current_dir = os.getcwd()
 
 
 def random_phrase(file):
@@ -50,7 +48,7 @@ def save_to_log(mess_time, user_name, chat_id, message):
 
 def err_log(err_text):
     try:
-        with open('errors.log', 'a', encoding='utf-8') as f:
+        with open(os.path.join(os.getcwd(), 'msg', 'errors.log', 'a', encoding='utf-8') as f:
             f.write('\n' + str(int(time.time())) + " " + err_text)
         print(str(int(time.time())), err_text)
         return True

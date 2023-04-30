@@ -9,8 +9,11 @@ RUN git clone https://github.com/Nefar10/AfinaKSAbot.git
 # Устанавливаем зависимости
 RUN pip install -r ./AfinaKSAbot/requirements.txt
 
+WORKDIR ./AfinaKSAbot
+
 # Указываем команду для запуска при старте контейнера
-CMD ["python", "./AfinaKSAbot/main.py"]
+CMD ["python", "main.py"]
+
 
 ENV AFINA_API_KEY=your_afina_api_key
 ENV TB_API_KEY=your_tb_api_key
