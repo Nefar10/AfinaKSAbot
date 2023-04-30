@@ -28,15 +28,16 @@ start_time = int(time.time())
 
 def random_phrase(file):
     try:
-        with open('data/' + file, 'r', encoding='utf-8') as file:
+        with open(os.path.join('data', file), 'r', encoding='utf-8') as file:
             lines = file.readlines()
             return random.choice(lines).strip()
     except:
         return 'Хм...'
 
+
 def save_to_log(mess_time, user_name, chat_id, message):
     try:
-        with open('msg/chat' + str(chat_id) + '.txt', 'a', encoding='utf-8') as f:
+        with open(os.path.join('msg', 'chat' + str(chat_id) + '.txt'), 'a', encoding='utf-8') as f:
             f.write('\n' + str(mess_time) + " " + user_name + " : " + message)
         return True
     except:
@@ -45,7 +46,7 @@ def save_to_log(mess_time, user_name, chat_id, message):
 
 def err_log(err_text):
     try:
-        with open('log/errors.log', 'a', encoding='utf-8') as f:
+        with open(os.path.join('log', 'errors.log'), 'a', encoding='utf-8') as f:
             f.write('\n' + str(int(time.time())) + " " + err_text)
         print(str(int(time.time())), err_text)
         return True
@@ -103,7 +104,7 @@ def set_chat_state(chat_id, state):
             break
     bot_chat_states.append({"ID": chat_id, "state": state, "Name": name})
     try:
-        with open('data/channels.dat', 'w', encoding='utf-8') as f:
+        with open(os.path.join('data', 'channels.dat'), 'w', encoding='utf-8') as f:
             f.write(str(bot_chat_states))
     except Exception as be:
         err_log(str(be))

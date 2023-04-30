@@ -1,7 +1,7 @@
 FROM python:3.10-slim-buster
 
 # Устанавливаем git для клонирования репозитория
-RUN apt-get update && apt-get install -y git
+RUN apt-get update && apt-get install -y git && apt-get install -y nano
 
 # Клонируем репозиторий
 RUN git clone https://github.com/Nefar10/AfinaKSAbot.git
