@@ -2,6 +2,7 @@ import openai
 import telebot
 import time
 import os
+import random
 
 # ваш openai API key
 openai.api_key = os.environ.get('AFINA_API_KEY')
@@ -21,7 +22,17 @@ max_message_live = 3600
 max_dialog_tokens = 4097
 # статус бота для каждого чата
 bot_chat_states = []
+# запомнить время старта
+start_time = int(time.time())
 
+
+def random_phrase(file):
+    try:
+        with open('data\\' + file, 'r', encoding='utf-8') as file:
+            lines = file.readlines()
+            return random.choice(lines).strip()
+    except:
+        return 'Хм...'
 
 def save_to_log(mess_time, user_name, chat_id, message):
     try:
@@ -55,33 +66,6 @@ def send_message(bt, chat_id, message):
     finally:
         if not save_to_log(last_message_time, "Afina", chat_id, message):
             err_log("Ошибка сохранения лога для чата " + str(chat_id))
-
-
-def create_dialog(userdata, mess):
-    curdialog = []
-    need_hello = True
-    for data in userdata:
-        if data["ID"] == mess.chat.id:
-            if ": Привет," in data["content"]:
-                need_hello = False
-            if int(data["time"]) < int(time.time()) - max_message_live:
-                userdata.remove(data)
-                err_log("Очистка устаревших сообщений " + data["content"])
-            else:
-                curdialog.append({"role": data["role"], "content": data["content"]})
-    # если текущий чат пуст, познакомить пользователя
-    if need_hello:
-        err_log("Новая беседа с " + str(mess.from_user.id) + " " + mess.from_user.first_name)
-        userdata.insert(0, {"ID": mess.chat.id, "time": last_message_time,
-                            "role": "assistant", "content": "Здравствуйте, " + mess.from_user.first_name})
-        userdata.insert(0, {"ID": mess.chat.id, "time": last_message_time,
-                            "role": "user",
-                            "content": mess.from_user.first_name + ": Привет, " + list_of_names[0] + "!"})
-        curdialog.insert(0, {"role": userdata[1]["role"], "content": userdata[1]["content"]})
-        curdialog.insert(0, {"role": userdata[0]["role"], "content": userdata[0]["content"]})
-
-    # формирование истории для запроса к gpt c очисткой диалога от старых сообщений, старше определенного времени жизни
-    return curdialog
 
 
 @bot.message_handler(commands=['chatlist'])
@@ -118,6 +102,11 @@ def set_chat_state(chat_id, state):
             bot_chat_states.remove(chat)
             break
     bot_chat_states.append({"ID": chat_id, "state": state, "Name": name})
+    try:
+        with open('data\\channels.dat', 'w', encoding='utf-8') as f:
+            f.write(str(bot_chat_states))
+    except Exception as be:
+        err_log(str(be))
 
 
 @bot.message_handler(commands=['state'])
@@ -138,7 +127,7 @@ def send_welcome(message):
     global bot_chat_states
     if get_chat_state(message) == 'sleep':
         set_chat_state(message.chat.id, 'run')
-        while not send_message(bot, message.chat.id, "Вжух!"):
+        while not send_message(bot, message.chat.id, random_phrase('start_dialog.txt')):
             print("Ждем -", sleep_time, "сек")
             time.sleep(sleep_time)
 
@@ -148,9 +137,36 @@ def send_sleep(message):
     global bot_chat_states
     if get_chat_state(message) == 'run':
         set_chat_state(message.chat.id, 'sleep')
-        while not send_message(bot, message.chat.id, "Пока-пока..."):
+        while not send_message(bot, message.chat.id, random_phrase('end_dialog.txt')):
             print("Ждем -", sleep_time, "сек")
             time.sleep(sleep_time)
+
+
+def create_dialog(userdata, mess):
+    curdialog = []
+    need_hello = True
+    for data in userdata:
+        if data["ID"] == mess.chat.id:
+            if ": Привет," in data["content"]:
+                need_hello = False
+            if int(data["time"]) < int(time.time()) - max_message_live:
+                userdata.remove(data)
+                err_log("Очистка устаревших сообщений " + data["content"])
+            else:
+                curdialog.append({"role": data["role"], "content": data["content"]})
+    # если текущий чат пуст, познакомить пользователя
+    if need_hello:
+        err_log("Новая беседа с " + str(mess.from_user.id) + " " + mess.from_user.first_name)
+        userdata.insert(0, {"ID": mess.chat.id, "time": last_message_time,
+                            "role": "assistant", "content": "Здравствуйте, " + mess.from_user.first_name})
+        userdata.insert(0, {"ID": mess.chat.id, "time": last_message_time,
+                            "role": "user",
+                            "content": mess.from_user.first_name + ": Привет, " + list_of_names[0] + "!"})
+        curdialog.insert(0, {"role": userdata[1]["role"], "content": userdata[1]["content"]})
+        curdialog.insert(0, {"role": userdata[0]["role"], "content": userdata[0]["content"]})
+
+    # формирование истории для запроса к gpt c очисткой диалога от старых сообщений, старше определенного времени жизни
+    return curdialog
 
 
 # обработка сообщения поступившего боту
@@ -174,7 +190,7 @@ def handle_message(message):
     # определение обращения к Афине
     for name in list_of_names:
         # если присутсвует имя афина или чат приватный, то формируем обращение
-        if (get_chat_state(message) == 'run') and (
+        if (get_chat_state(message) == 'run') and (start_time < int(time.time()) + 10) and (
                 (name.lower() in message.text.lower()) or (message.chat.type == 'private')):
             # сформировать диалог
             get_response = False
@@ -197,6 +213,7 @@ def handle_message(message):
                             time.sleep(sleep_time)
                     else:
                         del_mes = 0
+                        send_sleep(message)
                         for data in user_data:
                             if data["ID"] == message.chat.id:
                                 err_log("Очистка старых сообщений, буфер переполнен " + data["content"])
