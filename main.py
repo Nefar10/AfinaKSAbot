@@ -24,11 +24,13 @@ max_dialog_tokens = 4097
 bot_chat_states = []
 # запомнить время старта
 start_time = int(time.time())
+# определение текущей директории
+current_dir = os.getcwd()
 
 
 def random_phrase(file):
     try:
-        with open(os.path.join('data', file), 'r', encoding='utf-8') as file:
+        with open(os.path.join(os.getcwd(), 'data', file), 'r', encoding='utf-8') as file:
             lines = file.readlines()
             return random.choice(lines).strip()
     except Exception as be:
@@ -38,7 +40,7 @@ def random_phrase(file):
 
 def save_to_log(mess_time, user_name, chat_id, message):
     try:
-        with open(os.path.join('msg', 'chat' + str(chat_id) + '.txt'), 'a', encoding='utf-8') as f:
+        with open(os.path.join(os.getcwd(), 'msg', 'chat' + str(chat_id) + '.txt'), 'a', encoding='utf-8') as f:
             f.write('\n' + str(mess_time) + " " + user_name + " : " + message)
         return True
     except Exception as be:
@@ -106,7 +108,7 @@ def set_chat_state(chat_id, state):
             break
     bot_chat_states.append({"ID": chat_id, "state": state, "Name": name})
     try:
-        with open(os.path.join('data', 'channels.dat'), 'w', encoding='utf-8') as f:
+        with open(os.path.join(os.getcwd(), 'data', 'channels.dat'), 'w', encoding='utf-8') as f:
             f.write(str(bot_chat_states))
     except Exception as be:
         err_log(str(be))
