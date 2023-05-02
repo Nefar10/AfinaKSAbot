@@ -17,3 +17,5 @@ CMD ["python", "main.py"]
 
 ENV AFINA_API_KEY=your_afina_api_key
 ENV TB_API_KEY=your_tb_api_key
+ENV AFINA?NAMES=Afina,Athena,Афина
+ENV AFINA_GENDER=Female

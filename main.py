@@ -15,7 +15,7 @@ sleep_time = 30
 # время последнего сообщения
 last_message_time = int(time.time()) - sleep_time
 # список имен, на которые отликается афина
-list_of_names = ['Afina', 'Athena', 'Афина']
+list_of_names = os.environ.get('AFINA_NAMES').split(',')
 # срок жизни сообщений в памяти афины
 max_message_live = 3600
 # максимальная длина диалога в токенах
@@ -24,13 +24,27 @@ max_dialog_tokens = 4097
 bot_chat_states = []
 # запомнить время старта
 start_time = int(time.time())
+# пол собеседника
+gender = os.environ.get('AFINA_GENDER')
 
 
-def random_phrase(file):
+def random_phrase(context):
     try:
-        with open(os.path.join(os.getcwd(), 'data', file), 'r', encoding='utf-8') as file:
-            lines = file.readlines()
-            return random.choice(lines).strip()
+        if context == 'sleep':
+            if gender == 'f':
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo", messages=[{"role": "user", "content": "Какой шутливой фразой от лица девушки можно завершить любой диалог с компанией друзей?"}])
+            if gender == 'm':
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo", messages=[{"role": "user", "content": "Какой шутливой фразой от лица парня можно завершить любой диалог с компанией друзей?"}])
+        if context == 'wakeup':
+            if gender == 'f':
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo", messages=[{"role": "user", "content": "Какой шутливой фразой от лица девушки можно начать любой диалог с компанией друзей?"}])
+            if gender == 'm':
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo", messages=[{"role": "user", "content": "Какой шутливой фразой от лица парня можно начать любой диалог с компанией друзей?"}])
+        return response.choices[0].message.content
     except Exception as be:
         err_log(str(be))
         return 'Хм...'
@@ -67,7 +81,7 @@ def send_message(bt, chat_id, message):
         err_log("Возникла ошибка бота \n" + str(be))
         return False
     finally:
-        if not save_to_log(last_message_time, "Afina", chat_id, message):
+        if not save_to_log(last_message_time, list_of_names[0], chat_id, message):
             err_log("Ошибка сохранения лога для чата " + str(chat_id))
 
 
@@ -130,7 +144,7 @@ def send_welcome(message):
     global bot_chat_states
     if get_chat_state(message) == 'sleep':
         set_chat_state(message.chat.id, 'run')
-        while not send_message(bot, message.chat.id, random_phrase('start_dialog.txt')):
+        while not send_message(bot, message.chat.id, random_phrase('wakeup')):
             print("Ждем -", sleep_time, "сек")
             time.sleep(sleep_time)
 
@@ -140,7 +154,7 @@ def send_sleep(message):
     global bot_chat_states
     if get_chat_state(message) == 'run':
         set_chat_state(message.chat.id, 'sleep')
-        while not send_message(bot, message.chat.id, random_phrase('end_dialog.txt')):
+        while not send_message(bot, message.chat.id, random_phrase('sleep')):
             print("Ждем -", sleep_time, "сек")
             time.sleep(sleep_time)
 
@@ -235,5 +249,5 @@ def handle_message(message):
 
 
 if __name__ == '__main__':
-    err_log("Афина на связи!")
+    err_log(list_of_names[0] +" на связи!")
     bot.polling()
